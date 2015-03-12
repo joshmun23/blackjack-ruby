@@ -9,6 +9,9 @@ class Hand
   end
 
   def new_game
+    @player_score = 0
+    @dealer_score = 0
+
     2.times do
       @player_hand << @deck.draw!
       @dealer_hand << @deck.draw!
@@ -24,80 +27,73 @@ class Hand
       puts "Dealer was dealt: #{hand.rank + hand.suit} "
     end
 
-    puts "Player score is: #{player_score}"
-    puts "Dealer score is: #{dealer_score}"
+    player_move
+    dealer_move
+  end
 
-
+  def player_move
+    player_score
     if @player_score < 21
       puts "Hit or Stand? (h/s)"
       response = gets.chomp.downcase
-    end
-
-    if response == 'h'
-      @player_hand << @deck.draw!
-    else
-      until @dealer_score.between?(17, 27)
-        @dealer_hand << @deck.draw!
-        dealer_score
-      end
-
+      @player_hand << @deck.draw! if response == 'h'
+    elsif @player_score >= 21
       game_over
     end
 
-    current_round
+    player_move unless (response == 's') || @player_score == 21
+  end
+
+  def dealer_move
+    dealer_score
+
+    if @dealer_score.between?(17, 21)
+      game_over
+    else
+      @dealer_hand << @deck.draw!
+      dealer_move
+    end
   end
 
   def player_score
-    @player_hand.each do |hand|
-      if hand.face_card?
-        @player_score += 10
-      elsif hand.ace_card?
-        if @player_score > 10
-          @player_score += 1
-        else
-          @player_score += 11
-        end
-      else
-      @player_score += hand.rank.to_i
-      end
-    end
-
-    @player_score
+    @player_score = score_checker(@player_score, @player_hand)
+    puts "Player score is: #{@player_score}"
   end
 
   def dealer_score
-    @dealer_hand.each do |hand|
-      if hand.face_card?
-        @dealer_score += 10
-      elsif hand.ace_card?
-        if @dealer_score > 10
-          @dealer_score += 1
-        else
-          @dealer_score += 11
-        end
-      else
-        @dealer_score += hand.rank.to_i
-      end
-    end
+    @dealer_score = score_checker(@dealer_score, @dealer_hand)
+    puts "Dealer score is: #{@dealer_score}"
+  end
 
-    @dealer_score
+  def score_checker(user_score, user_hand)
+    # binding.pry
+    scores = user_hand.inject([]) do |arr, card|
+      if card.face_card?
+        card = 10
+      elsif card.ace_card?
+        card = 11 if user_score < 10
+        card = 1 if user_score > 10
+      else
+        card = card.rank.to_i
+      end
+      arr << card
+    end
+    scores.reduce(:+)
   end
 
   def game_over
-
     if @player_score > 21 || @dealer_score > 21
-      puts "Player Loses!" if @player_score > 21
-      puts "Player Wins!" if @dealer_score > 21
+      return puts "Player Loses!" if @player_score > 21
+      return puts "Player Wins!" if @dealer_score > 21
     elsif @player_score == @dealer_score
-      puts "Tie!"
+      return puts "Tie!"
     elsif @player_score > @dealer_score
-      puts "Player Wins!"
+      return puts "Player Wins!"
     else
-      puts "Dealer Wins!"
+      return puts "Dealer Wins!"
     end
-
-    puts "New Game? (y/n)"
-    response = gets.chomp
-    new_game if response == "y"
+    # puts "New Game? (y/n)"
+    # response = gets.chomp
+    # Deck.new if response == "y"
   end
 end
